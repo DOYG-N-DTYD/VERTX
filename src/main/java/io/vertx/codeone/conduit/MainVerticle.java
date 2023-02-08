@@ -6,9 +6,10 @@ public class MainVerticle extends AbstractVerticle {
 
   @Override
   public void start() {
-    vertx.createHttpServer()
-        .requestHandler(req -> req.response().end("Hello XXXXXX"))
-        .listen(8080);
+//    vertx.createHttpServer()
+//        .requestHandler(req -> req.response().end("Hello XXXXXX"))
+//        .listen(3000);
+	  vertx.deployVerticle(new HttpVerticle());
   }
 
 }

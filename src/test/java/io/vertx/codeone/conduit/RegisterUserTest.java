@@ -46,7 +46,7 @@ public class RegisterUserTest {
 
 		JsonObject user = new JsonObject().put("user", userJson);
 
-		webClient.post(8080, "localhost", "/api/users").putHeader("Content-Type", "application/json")
+		webClient.post(3000, "localhost", "/api/users").putHeader("Content-Type", "application/json")
 				.putHeader("X-requested-with", "XMLHttpRequest").sendJsonObject(user, ar -> {
 					if (ar.succeeded()) {
 						testContext.assertEquals(201, ar.result().statusCode());
