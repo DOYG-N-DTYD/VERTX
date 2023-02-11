@@ -30,7 +30,7 @@ public class RegisterUserTest {
 		vertx = Vertx.vertx();
 		webClient = WebClient.create(vertx);
 
-		vertx.deployVerticle(new HttpVerticle());
+		vertx.deployVerticle(new MainVerticle()); // not HttpVerticle but MainVerticle
 	}
 
 	@After
@@ -46,13 +46,14 @@ public class RegisterUserTest {
 
 		JsonObject user = new JsonObject().put("user", userJson);
 
-		webClient.post(3000, "localhost", "/api/users").putHeader("Content-Type", "application/json")
+		//webClient.post(3000, "localhost", "/usersAPI/users").putHeader("Content-Type", "application/json") // "/api/users/"
+		webClient.post(3000, "localhost", "/usersAPI/users").putHeader("Content-Type", "application/json") // "/api/users/"
 				.putHeader("X-requested-with", "XMLHttpRequest").sendJsonObject(user, ar -> {
 					if (ar.succeeded()) {
 						testContext.assertEquals(201, ar.result().statusCode());
 						JsonObject returnedJson = ar.result().bodyAsJsonObject();
 						JsonObject returnedUser = returnedJson.getJsonObject("user");
-						testContext.assertEquals("Mirek", returnedUser.getString("username"));
+						testContext.assertEquals("mirek", returnedUser.getString("username"));
 						testContext.assertEquals("sw3d96@gmail.com", returnedUser.getString("email"));
 						testContext.assertNotNull(returnedUser.getString("token"));
 						async.complete();

@@ -27,6 +27,14 @@
   </dependencyManagement>
 
   <dependencies>
+	  <dependency>
+		  <groupId>io.vertx</groupId>
+		  <artifactId>vertx-mongo-client</artifactId>
+	  </dependency>
+	  <dependency>
+		  <groupId>io.vertx</groupId>
+		  <artifactId>vertx-auth-mongo</artifactId>
+	  </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-core</artifactId>
@@ -34,12 +42,10 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-web</artifactId>
-     <version>${vertx.version}</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-web-client</artifactId>
-      <version>${vertx.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

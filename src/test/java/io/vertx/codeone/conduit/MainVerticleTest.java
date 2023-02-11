@@ -1,6 +1,5 @@
 package io.vertx.codeone.conduit;
 
-import io.vertx.codeone.conduit.MainVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.unit.Async;
