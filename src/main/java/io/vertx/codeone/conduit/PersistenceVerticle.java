@@ -17,12 +17,14 @@ public class PersistenceVerticle extends AbstractVerticle{
   // for DB access
   private MongoClient mongoClient;
   // Authentication provider for logging in
-  private MongoAuth loginAuthProvider;
+  @SuppressWarnings("deprecation")
+private MongoAuth loginAuthProvider;
   
   //
   MongoUserUtil inserterToDb;
 
-  @Override
+  @SuppressWarnings("deprecation")
+  //@Override
   public void start(Promise<Void> startPromise) {
     // Configure the MongoClient inline.  This should be externalized into a config file
     mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", config().getString("db_name", "conduit_dev")).put("connection_string", config().getString("connection_string", "mongodb://localhost:27017")));

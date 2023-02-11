@@ -50,9 +50,11 @@ public class RegisterUserTest {
 		webClient.post(3000, "localhost", "/usersAPI/users").putHeader("Content-Type", "application/json") // "/api/users/"
 				.putHeader("X-requested-with", "XMLHttpRequest").sendJsonObject(user, ar -> {
 					if (ar.succeeded()) {
+						System.out.println("RegisterUserTest OK !!!");
 						testContext.assertEquals(201, ar.result().statusCode());
-						JsonObject returnedJson = ar.result().bodyAsJsonObject();
-						JsonObject returnedUser = returnedJson.getJsonObject("user");
+							System.out.println("??????? " + ar.result().body().toString());
+						JsonObject returnedJson = ar.result().bodyAsJsonObject();   		// ???????????????//
+						JsonObject returnedUser = returnedJson.getJsonObject("user");		// ???????????
 						testContext.assertEquals("mirek", returnedUser.getString("username"));
 						testContext.assertEquals("sw3d96@gmail.com", returnedUser.getString("email"));
 						testContext.assertNotNull(returnedUser.getString("token"));

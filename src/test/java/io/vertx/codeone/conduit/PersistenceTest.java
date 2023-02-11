@@ -48,6 +48,9 @@ public class PersistenceTest {
 		vertx.<JsonObject>eventBus().request("persistence-address", message, ar -> { // send -> in ver4 -> request
 			if(ar.succeeded()) {
 				testContext.assertNotNull(ar.result().body());
+				System.out.println("!!!!!!!!!!!!!!!!!!!!!  "+ar.toString());
+				System.out.println("!!!!!!!!!!!!!!!!!!!!!  "+ar.result().toString());
+				System.out.println("!!!!!!!!!!!!!!!!!!!!!  "+ar.result().body().toString());
 				User returnedUser = Json.decodeValue(ar.result().body().toString(), User.class); // PROBLEM DECODE :(
 				testContext.assertEquals("sw3d@gmail.com",returnedUser.getEmail());
 				testContext.assertEquals("mirek", returnedUser.getUsername());

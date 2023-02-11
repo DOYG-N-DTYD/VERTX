@@ -23,7 +23,7 @@ import io.vertx.ext.web.handler.JWTAuthHandler;
 
 public class HttpVerticle extends AbstractVerticle {
 
-	@Override
+	//@Override
 	public void start(Promise<Void> startPromise) throws Exception {
 
 		Router baseRouter = Router.router(vertx);
@@ -34,9 +34,9 @@ public class HttpVerticle extends AbstractVerticle {
 		});
 		apiRouter.route("/user*").handler(BodyHandler.create());
 		apiRouter.post("/users").handler(this::registerUser);
-		apiRouter.post("/users/*").handler(ctx -> {
-			ctx.response().end("apiRoute POST users");
-		});
+//		apiRouter.post("/users/*").handler(ctx -> {
+//			ctx.response().end("apiRoute POST users");
+//		});
 		apiRouter.get("/users/*").handler(ctx -> {
 			ctx.response().end("apiRoute GET users");
 		});
@@ -54,21 +54,27 @@ public class HttpVerticle extends AbstractVerticle {
 																						// Handler<HttpServerRequest>.
 																						// (::accept)
 			if (result.succeeded()) {
+				System.out.println();
 				Future.succeededFuture();
+				startPromise.complete();
+				System.out.println("HHTPverticle start method GOOD END");
 			} else {
 				Future.failedFuture(result.cause());
+				startPromise.fail(result.cause());
+				System.out.println("HHTPverticle start method BAD END");
 			}
 		});
 	}
 
+	@SuppressWarnings("unused")
 	private void registerUser(RoutingContext routingContext) {
-User user1 = new User("mirek", "sw3d96@gmail.com", null, "mirekmirek", null, "jwt.token.here");
-		// User user2 = new User("Lemmy", "lemmy@gmail.com", null, "lemmylemmy", null,
+//User user1 = new User("mirek", "sw3d96@gmail.com", null, "mirekmirek", null, "jwt.token.here");
+// routingContext.response()
+// 	.setStatusCode(201)
+// 	.putHeader("Content-Type","application/json; charset=utf-8")
+// 	.end(Json.encodePrettily(user1.toConduitString()));
+//User user2 = new User("Lemmy", "lemmy@gmail.com", null, "lemmylemmy", null,
 		// "jwt.token.here");
- routingContext.response()
- 	.setStatusCode(201)
- 	.putHeader("Content-Type","application/json; charset=utf-8")
- 	.end(Json.encodePrettily(user1.toConduitString()));
 //			routingContext.response().setStatusCode(201).putHeader("Content-Type", "application/json; charset=utf-8")
 //			.end(Json.encodePrettily(user2.toConduitString()));
 
@@ -76,21 +82,25 @@ User user1 = new User("mirek", "sw3d96@gmail.com", null, "mirekmirek", null, "jw
 				.put("action","register-user")
 				.put("user", routingContext.body().asJsonObject().getJsonObject("user")); // ?? GETBODYASJSON. body().asJsonObject()
 		
-//		vertx.<JsonObject>eventBus().request("persistence-address", message, ar -> { //REQUEST <- send
-//			if(ar.succeeded()) {
-//				User returnedUser = Json.decodeValue(ar.result().body().toString(), User.class);
-//				returnedUser.setToken("jwt.token.here");
-//				routingContext.response()
-//					.setStatusCode(201)
-//					.putHeader("Content-Type", "application/json; charset=utf-8")
-//					.end(Json.encodePrettily(returnedUser.toConduitString()));
-//			} else {
-//				routingContext.response()
-//				.setStatusCode(500)
-//				.putHeader("Content-Type", "application/json; charset=utf-8")
-//				.end(Json.encodePrettily(ar.cause().getMessage()));
-//			}
-//		});
+		vertx.<JsonObject>eventBus().request("persistence-address", message, ar -> { //REQUEST <- send
+			if(ar.succeeded()) {
+				System.out.println("HTTPverticle method registerUser 1 ");
+				User returnedUser = Json.decodeValue(ar.result().body().toString(), User.class);
+				returnedUser.setToken("jwt.token.here");
+				routingContext.response()
+					.setStatusCode(201)
+					.putHeader("Content-Type", "application/json; charset=utf-8")
+					.end(Json.encodePrettily(returnedUser.toConduitString()));
+				System.out.println("HTTPverticle method registerUser 2 ");
+			} else {
+				System.out.println("HTTPverticle method registerUser  3 ");
+				routingContext.response()
+				.setStatusCode(500)
+				.putHeader("Content-Type", "application/json; charset=utf-8")
+				.end(Json.encodePrettily(ar.cause().getMessage()));
+				System.out.println("HTTPverticle method registerUser  4 ");
+			}
+		});
 
 	}
 }
