@@ -14,6 +14,9 @@ import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.JWTOptions;
+import io.vertx.ext.auth.jwt.JWTAuth;
+import io.vertx.ext.auth.jwt.JWTAuthOptions;
 import io.vertx.ext.web.Route;
 //import io.vertx.ext.auth.User;
 import io.vertx.ext.web.Router;
@@ -23,11 +26,28 @@ import io.vertx.ext.web.handler.JWTAuthHandler;
 
 public class HttpVerticle extends AbstractVerticle {
 
+	JWTAuth jwtAuth;
+	
 	//@Override
 	public void start(Promise<Void> startPromise) throws Exception {
-
+//		JWTAuthOptions jwtao = new JWTAuthOptions(new JsonObject().put("keyStore", new JsonObject()
+//			      .put("type", "jceks")
+//			      .put("path", "keystore.jceks")
+//			      .put("password", "secret")));
+		//jwtAuth = JWTAuth.create(vertx, jwtao);
+//		jwtAuth = JWTAuth.create(vertx, new JWTAuthOptions().addJwk(
+//				   new JsonObject()
+//				   .put("kty", "RSA")
+//				   .put("n", "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw")
+//				   .put("e", "AQAB")
+//				   .put("alg", "RS256")
+//				   .put("kid", "2011-04-29")));
+		
 		Router baseRouter = Router.router(vertx);
 		Router apiRouter = Router.router(vertx);
+		Router registerRouter = Router.router(vertx);
+		Router loginRouter = Router.router(vertx);
+		Router itemsRouter = Router.router(vertx);
 		baseRouter.route("/").handler(routingContext -> {
 			HttpServerResponse response = routingContext.response();
 			response.putHeader("content-type", "text/plain").end("Hello test VERTX");
@@ -40,7 +60,6 @@ public class HttpVerticle extends AbstractVerticle {
 		apiRouter.get("/users/*").handler(ctx -> {
 			ctx.response().end("apiRoute GET users");
 		});
-
 		baseRouter.route("/usersAPI/*").subRouter(apiRouter); // So baseRouter will be available
 																// http://localhost:3000/usersAPI/users/us_1
 		// apiRouter.route("/user*").handler(BodyHandler.create());
@@ -49,12 +68,35 @@ public class HttpVerticle extends AbstractVerticle {
 
 		// System.out.println("OUTPUT apiRouter+ " +
 		// Arrays.toString(apiRouter.getRoutes().toArray()));
+		
+//		registerRouter.post("/register/*").handler(ctx -> {
+//			//registerRouter.post("/register").handler(this::registerUser);
+//			ctx.response().end("apiRoute POST register");
+//		});
+		registerRouter.route("/register*").handler(BodyHandler.create());
+		registerRouter.post("/register/*").handler(this::registerUser);
+		baseRouter.route("/*").subRouter(registerRouter);
+//TODO		
+//			loginRouter.post("/login/*").handler(ctx -> {
+//				ctx.response().end("apiRoute POST login");
+//			});
+//			baseRouter.route("/*").subRouter(loginRouter);
+//		
+//				itemsRouter.get("/items/*").handler(ctx -> {
+//					ctx.response().end("apiRoute GET items");
+//				});
+//				baseRouter.route("/*").subRouter(itemsRouter);
+//				itemsRouter.post("/items/*").handler(ctx -> {
+//					ctx.response().end("apiRoute post items");
+//				});
+//				baseRouter.route("/*").subRouter(itemsRouter);
+		
+		
 		vertx.createHttpServer().requestHandler(baseRouter).listen(3000, result -> { // in version VERTx 4. Router
 																						// implements
 																						// Handler<HttpServerRequest>.
 																						// (::accept)
 			if (result.succeeded()) {
-				System.out.println();
 				Future.succeededFuture();
 				startPromise.complete();
 				System.out.println("HHTPverticle start method GOOD END");
@@ -84,47 +126,25 @@ public class HttpVerticle extends AbstractVerticle {
 		
 		vertx.<JsonObject>eventBus().request("persistence-address", message, ar -> { //REQUEST <- send
 			if(ar.succeeded()) {
-				System.out.println("HTTPverticle method registerUser 1 ");
+				System.out.println("HTTPverticle method registerUser SUCCESS 1");
 				User returnedUser = Json.decodeValue(ar.result().body().toString(), User.class);
-				returnedUser.setToken("jwt.token.here");
+				//returnedUser.setToken("jwt.token.here");
+				String token = jwtAuth.generateToken(new JsonObject().put("email", returnedUser.getEmail()).put("password", returnedUser.getPassword()), new JWTOptions().setIgnoreExpiration(true));
+				returnedUser.setToken(token);
 				routingContext.response()
 					.setStatusCode(201)
 					.putHeader("Content-Type", "application/json; charset=utf-8")
 					.end(Json.encodePrettily(returnedUser.toConduitString()));
-				System.out.println("HTTPverticle method registerUser 2 ");
+				System.out.println("HTTPverticle method registerUser SUCCESS 2");
 			} else {
-				System.out.println("HTTPverticle method registerUser  3 ");
+				System.out.println("HTTPverticle method registerUser ISSUE 1");
 				routingContext.response()
 				.setStatusCode(500)
 				.putHeader("Content-Type", "application/json; charset=utf-8")
 				.end(Json.encodePrettily(ar.cause().getMessage()));
-				System.out.println("HTTPverticle method registerUser  4 ");
+				System.out.println("HTTPverticle method registerUser ISSUE 2");
 			}
 		});
 
 	}
 }
-
-//@Override
-//public Vertx getVertx() {
-//	// TODO Auto-generated method stub
-//	return null;
-//}
-//
-//@Override
-//public void init(Vertx vertx, Context context) {
-//	// TODO Auto-generated method stub
-//	
-//}
-//
-//@Override
-//public void start(Promise<Void> startPromise) throws Exception {
-//	// TODO Auto-generated method stub
-//	Router baseRouter = Router.router(vertx);
-//}
-//
-//@Override
-//public void stop(Promise<Void> stopPromise) throws Exception {
-//	// TODO Auto-generated method stub
-//	
-//}

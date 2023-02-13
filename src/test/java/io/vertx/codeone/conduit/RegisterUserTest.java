@@ -47,7 +47,7 @@ public class RegisterUserTest {
 		JsonObject user = new JsonObject().put("user", userJson);
 
 		//webClient.post(3000, "localhost", "/usersAPI/users").putHeader("Content-Type", "application/json") // "/api/users/"
-		webClient.post(3000, "localhost", "/usersAPI/users").putHeader("Content-Type", "application/json") // "/api/users/"
+		webClient.post(3000, "localhost", "/register").putHeader("Content-Type", "application/json") // "/api/users/"
 				.putHeader("X-requested-with", "XMLHttpRequest").sendJsonObject(user, ar -> {
 					if (ar.succeeded()) {
 						System.out.println("RegisterUserTest OK !!!");
@@ -57,7 +57,7 @@ public class RegisterUserTest {
 						JsonObject returnedUser = returnedJson.getJsonObject("user");		// ???????????
 						testContext.assertEquals("mirek", returnedUser.getString("username"));
 						testContext.assertEquals("sw3d96@gmail.com", returnedUser.getString("email"));
-						testContext.assertNotNull(returnedUser.getString("token"));
+						testContext.assertTrue(returnedUser.getString("token").length() > 25);
 						async.complete();
 					}
 				});

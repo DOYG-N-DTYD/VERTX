@@ -13,7 +13,7 @@ public class MainVerticle extends AbstractVerticle {
 	  public void start(Promise<Void> startPromise) {
 
 //	vertx.deployVerticle(new HttpVerticle());
-		//List<Future> allFutures = ImmutableList.of(deployVerticle(HttpVerticle.class.getName()).future(),deployVerticle(PersistenceVerticle.class.getName()).future());
+//		List<Future> allFutures = ImmutableList.of(deployVerticle(HttpVerticle.class.getName()).future(),deployVerticle(PersistenceVerticle.class.getName()).future());
 		CompositeFuture.all(
 	      deployVerticle(HttpVerticle.class.getName()).future(),
 	      deployVerticle(PersistenceVerticle.class.getName()).future()
