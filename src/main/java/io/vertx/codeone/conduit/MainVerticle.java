@@ -10,35 +10,33 @@ import io.vertx.core.Promise;
 public class MainVerticle extends AbstractVerticle {
 
 	@Override
-	  public void start(Promise<Void> startPromise) {
+	public void start(Promise<Void> startPromise) {
 
 //	vertx.deployVerticle(new HttpVerticle());
 //		List<Future> allFutures = ImmutableList.of(deployVerticle(HttpVerticle.class.getName()).future(),deployVerticle(PersistenceVerticle.class.getName()).future());
-		CompositeFuture.all(
-	      deployVerticle(HttpVerticle.class.getName()).future(),
-	      deployVerticle(PersistenceVerticle.class.getName()).future()
-	    ).onComplete(f ->{										//setHandler -> onComplete
-	      if (f.succeeded()) {
-	    	 startPromise.complete();
-	      }else{
-	    	 startPromise.fail(f.cause());
-	      }
-	    });
-	  }
+		CompositeFuture.all(deployVerticle(HttpVerticle.class.getName()).future(),
+				deployVerticle(PersistenceVerticle.class.getName()).future()).onComplete(f -> { // setHandler ->
+																								// onComplete
+					if (f.succeeded()) {
+						startPromise.complete();
+					} else {
+						startPromise.fail(f.cause());
+					}
+				});
+	}
 
-	  Promise<Void> deployVerticle(String verticleName) {
-	    Promise<Void> retVal = Promise.promise();			// NULL ???????		
-	    vertx.deployVerticle(verticleName, event -> {
-	      if (event.succeeded()) {
-	        retVal.complete(); 							//complete -> isComplete ???????
-	      }else{
-	        retVal.fail(event.cause());
-	      }
-	    });
-	    return retVal;
-	  }	
-	
-	
+	Promise<Void> deployVerticle(String verticleName) {
+		Promise<Void> retVal = Promise.promise(); // NULL ???????
+		vertx.deployVerticle(verticleName, event -> {
+			if (event.succeeded()) {
+				retVal.complete(); // complete -> isComplete ???????
+			} else {
+				retVal.fail(event.cause());
+			}
+		});
+		return retVal;
+	}
+
 //	@Override
 //	public void start(Promise<Void> startPromise) {
 //    vertx.createHttpServer()

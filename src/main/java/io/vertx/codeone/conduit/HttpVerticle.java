@@ -3,6 +3,9 @@ package io.vertx.codeone.conduit;
 import java.util.Arrays;
 import java.util.logging.Handler;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.google.gson.Gson;
+
 import io.vertx.codeone.conduit.models.User;
 import io.vertx.core.AbstractVerticle;
 //import io.vertx.core.Context;
@@ -27,14 +30,14 @@ import io.vertx.ext.web.handler.JWTAuthHandler;
 public class HttpVerticle extends AbstractVerticle {
 
 	JWTAuth jwtAuth;
-	
-	//@Override
+
+	// @Override
 	public void start(Promise<Void> startPromise) throws Exception {
 //		JWTAuthOptions jwtao = new JWTAuthOptions(new JsonObject().put("keyStore", new JsonObject()
 //			      .put("type", "jceks")
 //			      .put("path", "keystore.jceks")
 //			      .put("password", "secret")));
-		//jwtAuth = JWTAuth.create(vertx, jwtao);
+		// jwtAuth = JWTAuth.create(vertx, jwtao);
 //		jwtAuth = JWTAuth.create(vertx, new JWTAuthOptions().addJwk(
 //				   new JsonObject()
 //				   .put("kty", "RSA")
@@ -42,7 +45,7 @@ public class HttpVerticle extends AbstractVerticle {
 //				   .put("e", "AQAB")
 //				   .put("alg", "RS256")
 //				   .put("kid", "2011-04-29")));
-		
+
 		Router baseRouter = Router.router(vertx);
 		Router apiRouter = Router.router(vertx);
 		Router registerRouter = Router.router(vertx);
@@ -68,14 +71,29 @@ public class HttpVerticle extends AbstractVerticle {
 
 		// System.out.println("OUTPUT apiRouter+ " +
 		// Arrays.toString(apiRouter.getRoutes().toArray()));
-		
+		// baseRouter.route("/*").subRouter(registerRouter);
+		// registerRouter.post("/register").handler(this::registerUser);
+
+//		registerRouter.get("/register/*").handler(ctx -> {
+//			ctx.response().end("apiRoute GET register");
+//		});
 //		registerRouter.post("/register/*").handler(ctx -> {
-//			//registerRouter.post("/register").handler(this::registerUser);
+//			
 //			ctx.response().end("apiRoute POST register");
 //		});
+
 		registerRouter.route("/register*").handler(BodyHandler.create());
-		registerRouter.post("/register/*").handler(this::registerUser);
+		registerRouter.post("/register").handler(this::registerUser);
 		baseRouter.route("/*").subRouter(registerRouter);
+		
+		loginRouter.route("/login*").handler(BodyHandler.create());
+		loginRouter.post("/login").handler(this::loginUser);
+		baseRouter.route("/*").subRouter(loginRouter);
+
+//		registerRouter.route("/register*").handler(BodyHandler.create());
+//		registerRouter.post("/register").handler(this::registerUser);
+//		registerRouter.get("/register").handler(this::registerUser);
+//		baseRouter.route("/*").subRouter(registerRouter);
 //TODO		
 //			loginRouter.post("/login/*").handler(ctx -> {
 //				ctx.response().end("apiRoute POST login");
@@ -90,8 +108,7 @@ public class HttpVerticle extends AbstractVerticle {
 //					ctx.response().end("apiRoute post items");
 //				});
 //				baseRouter.route("/*").subRouter(itemsRouter);
-		
-		
+
 		vertx.createHttpServer().requestHandler(baseRouter).listen(3000, result -> { // in version VERTx 4. Router
 																						// implements
 																						// Handler<HttpServerRequest>.
@@ -108,9 +125,9 @@ public class HttpVerticle extends AbstractVerticle {
 		});
 	}
 
-	@SuppressWarnings("unused")
+	@SuppressWarnings("deprecation")
 	private void registerUser(RoutingContext routingContext) {
-//User user1 = new User("mirek", "sw3d96@gmail.com", null, "mirekmirek", null, "jwt.token.here");
+//User user1 = new User("mirek", "sw3d96@gmail.com", "BIO", "mirekmirek", "IMAGE", "jwt.token.here", "UUIDtest");
 // routingContext.response()
 // 	.setStatusCode(201)
 // 	.putHeader("Content-Type","application/json; charset=utf-8")
@@ -120,31 +137,95 @@ public class HttpVerticle extends AbstractVerticle {
 //			routingContext.response().setStatusCode(201).putHeader("Content-Type", "application/json; charset=utf-8")
 //			.end(Json.encodePrettily(user2.toConduitString()));
 
-		JsonObject message = new JsonObject()
-				.put("action","register-user")
-				.put("user", routingContext.body().asJsonObject().getJsonObject("user")); // ?? GETBODYASJSON. body().asJsonObject()
-		
-		vertx.<JsonObject>eventBus().request("persistence-address", message, ar -> { //REQUEST <- send
-			if(ar.succeeded()) {
-				System.out.println("HTTPverticle method registerUser SUCCESS 1");
-				User returnedUser = Json.decodeValue(ar.result().body().toString(), User.class);
-				//returnedUser.setToken("jwt.token.here");
-				String token = jwtAuth.generateToken(new JsonObject().put("email", returnedUser.getEmail()).put("password", returnedUser.getPassword()), new JWTOptions().setIgnoreExpiration(true));
-				returnedUser.setToken(token);
-				routingContext.response()
-					.setStatusCode(201)
-					.putHeader("Content-Type", "application/json; charset=utf-8")
-					.end(Json.encodePrettily(returnedUser.toConduitString()));
-				System.out.println("HTTPverticle method registerUser SUCCESS 2");
+//		JsonObject message = new JsonObject()
+//				.put("action","register-user")
+//				//.put("user", user1);//routingContext.getBodyAsJson().getJsonObject("user"));
+//				.put("user", routingContext.body().asJsonObject().getJsonObject("user")); // ?? GETBODYASJSON. body().asJsonObject()
+//
+//		routingContext.response()
+//		.setStatusCode(201)
+//		.putHeader("Content-Type", "application/json; charset=utf-8")
+//		.end(Json.encodePrettily(routingContext.body().asJsonObject().getJsonObject("user")));
+
+		JsonObject message = new JsonObject().put("action", "register-user")
+				// .put("user", routingContext.body().asJsonObject().getJsonObject("user"));
+				// //.getJsonObject("user")
+				.put("user", routingContext.getBodyAsJson().getJsonObject("user"));
+
+		System.out.println("XXXXXXXXXXXXXXXXXXx " + routingContext.body().asJsonObject().getJsonObject("user"));
+		vertx.eventBus().request("persistence-address", message, ar -> {
+			if (ar.succeeded()) {
+				Gson g = new Gson();
+				User returnedUser = g.fromJson(ar.result().body().toString(), User.class);
+//	    		String token = jwtAuth.generateToken(new JsonObject()												// TODO ISSUE WITH TOKEN
+//	    				.put("email", returnedUser.getEmail())
+//	    				.put("password", returnedUser.getPassword()), new JWTOptions().setIgnoreExpiration(true));
+//	            returnedUser.setToken(token);
+				returnedUser.setToken("jwt.token.here TEST");
+				routingContext.response().setStatusCode(201)
+						.putHeader("Content-Type", "application/json; charset=utf-8")
+						// .putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+						.end(Json.encodePrettily(returnedUser.toConduitString()))
+						;
 			} else {
-				System.out.println("HTTPverticle method registerUser ISSUE 1");
-				routingContext.response()
-				.setStatusCode(500)
-				.putHeader("Content-Type", "application/json; charset=utf-8")
-				.end(Json.encodePrettily(ar.cause().getMessage()));
-				System.out.println("HTTPverticle method registerUser ISSUE 2");
+				routingContext.response().setStatusCode(500)
+						.putHeader("Content-Type", "application/json; charset=utf-8")
+						// .putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+						.end(Json.encodePrettily(ar.cause().getMessage()));
 			}
 		});
 
+//		vertx.<JsonObject>eventBus().request("persistence-address", message, ar -> { //REQUEST <- send
+//			if(ar.succeeded()) {
+//				System.out.println("HTTPverticle method registerUser SUCCESS 1");
+//				User returnedUser = Json.decodeValue(ar.result().body().toString(), User.class);
+//				//returnedUser.setToken("jwt.token.here");
+//				String token = jwtAuth.generateToken(new JsonObject().put("email", returnedUser.getEmail()).put("password", returnedUser.getPassword()), new JWTOptions().setIgnoreExpiration(true));
+//				returnedUser.setToken(token);
+//				routingContext.response()
+//					.setStatusCode(201)
+//					.putHeader("Content-Type", "application/json; charset=utf-8")
+//					.end(Json.encodePrettily(returnedUser.toConduitString()));
+//				System.out.println("HTTPverticle method registerUser SUCCESS 2");
+//			} else {
+//				System.out.println("HTTPverticle method registerUser ISSUE 1");
+//				routingContext.response()
+//				.setStatusCode(500)
+//				.putHeader("Content-Type", "application/json; charset=utf-8")
+//				.end(Json.encodePrettily(ar.cause().getMessage()));
+//				System.out.println("HTTPverticle method registerUser ISSUE 2");
+//			}
+//		});
+
+	}
+	
+	private void loginUser(RoutingContext routingContext) {
+		// TODO RETURN TOKEN
+		JsonObject message = new JsonObject().put("action", "login-user")
+				// .put("user", routingContext.body().asJsonObject().getJsonObject("user"));
+				// //.getJsonObject("user")
+				.put("user", routingContext.getBodyAsJson().getJsonObject("user"));
+		
+		vertx.eventBus().request("login-address", message, ar -> {
+			if (ar.succeeded()) {
+				Gson g = new Gson();
+				System.out.println("ISSUE @@ "+ar.result().body().toString());
+				User returnedUser = g.fromJson(ar.result().body().toString(), User.class);
+//	    		String token = jwtAuth.generateToken(new JsonObject()												// TODO ISSUE WITH TOKEN
+//	    				.put("email", returnedUser.getEmail())
+//	    				.put("password", returnedUser.getPassword()), new JWTOptions().setIgnoreExpiration(true));
+//	            returnedUser.setToken(token);
+//				returnedUser.setToken("jwt.token.here TEST");
+				routingContext.response().setStatusCode(201)
+						.putHeader("Content-Type", "application/json; charset=utf-8")
+						// .putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+						.end(Json.encodePrettily(returnedUser.toConduitString()));
+			} else {
+				routingContext.response().setStatusCode(500)
+						.putHeader("Content-Type", "application/json; charset=utf-8")
+						// .putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+						.end(Json.encodePrettily(ar.cause().getMessage()));
+			}
+		});
 	}
 }
