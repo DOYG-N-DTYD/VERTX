@@ -1,9 +1,6 @@
+
 package io.vertx.codeone.conduit;
 
-import java.util.Arrays;
-import java.util.logging.Handler;
-
-import com.fasterxml.jackson.core.JsonParser;
 import com.google.gson.Gson;
 
 import io.vertx.codeone.conduit.models.User;
@@ -17,15 +14,11 @@ import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.auth.JWTOptions;
 import io.vertx.ext.auth.jwt.JWTAuth;
-import io.vertx.ext.auth.jwt.JWTAuthOptions;
-import io.vertx.ext.web.Route;
 //import io.vertx.ext.auth.User;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.JWTAuthHandler;
 
 public class HttpVerticle extends AbstractVerticle {
 
@@ -90,6 +83,11 @@ public class HttpVerticle extends AbstractVerticle {
 		loginRouter.post("/login").handler(this::loginUser);
 		baseRouter.route("/*").subRouter(loginRouter);
 
+		
+		itemsRouter.route("/items*").handler(BodyHandler.create());
+		itemsRouter.post("/items").handler(this::itemsUser);
+		baseRouter.route("/*").subRouter(itemsRouter);
+		
 //		registerRouter.route("/register*").handler(BodyHandler.create());
 //		registerRouter.post("/register").handler(this::registerUser);
 //		registerRouter.get("/register").handler(this::registerUser);
@@ -225,6 +223,39 @@ public class HttpVerticle extends AbstractVerticle {
 						.putHeader("Content-Type", "application/json; charset=utf-8")
 						// .putHeader("Content-Length", String.valueOf(userResult.toString().length()))
 						.end(Json.encodePrettily(ar.cause().getMessage()));
+			}
+		});
+	}
+	
+//////////////////////////////// ?? 
+	private void itemsUser(RoutingContext routingContext) {
+		System.out.println("httpVerticle method itemsUser");
+		JsonObject message = new JsonObject().put("action", "items-user")
+				// .put("user", routingContext.body().asJsonObject().getJsonObject("user"));
+				// //.getJsonObject("user")
+				.put("user", routingContext.getBodyAsJson().getJsonObject("user"));
+		System.out.println("PRE event bus");
+		vertx.eventBus().request("item-address", message, ar -> {
+			if (ar.succeeded()) {
+//				Gson g = new Gson();
+//				System.out.println("ISSUE @@ "+ar.result().body().toString());
+//				User returnedUser = g.fromJson(ar.result().body().toString(), User.class);
+//	    		String token = jwtAuth.generateToken(new JsonObject()												// TODO ISSUE WITH TOKEN
+//	    				.put("email", returnedUser.getEmail())
+//	    				.put("password", returnedUser.getPassword()), new JWTOptions().setIgnoreExpiration(true));
+//	            returnedUser.setToken(token);
+//				returnedUser.setToken("jwt.token.here TEST");
+				routingContext.response().setStatusCode(201)
+						.putHeader("Content-Type", "application/json; charset=utf-8")
+						// .putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+						.end("SUCCESS END ");
+				System.out.println("POST event bus 111");
+			} else {
+				routingContext.response().setStatusCode(500)
+						.putHeader("Content-Type", "application/json; charset=utf-8")
+						// .putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+						.end("ERROR END");
+				System.out.println("PRE event 222");
 			}
 		});
 	}
