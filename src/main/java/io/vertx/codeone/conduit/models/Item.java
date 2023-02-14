@@ -8,7 +8,7 @@ public class Item {
 	String UUID;
 
 	public JsonObject toConduitString() {
-		JsonObject item = new JsonObject().put("name", this.name).put("UUID", this.UUID).put("owner", this.owner);
+		JsonObject item = new JsonObject().put("name", this.name).put("owner", this.owner);//.put("UUID", this.UUID)
 		JsonObject retVal = new JsonObject().put("item", item);
 
 		return retVal;

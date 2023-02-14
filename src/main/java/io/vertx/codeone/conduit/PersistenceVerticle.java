@@ -1,5 +1,7 @@
 package io.vertx.codeone.conduit;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.lang.model.element.Element;
@@ -7,7 +9,11 @@ import javax.swing.text.Document;
 
 import org.bson.conversions.Bson;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonReader;
 
+import io.vertx.codeone.conduit.models.Item;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -237,6 +243,21 @@ public class PersistenceVerticle extends AbstractVerticle {
 						System.out.println("USER IN DB, AUTHORIZED SO OK");
 						System.out.println("USER ITEMS FROM DATABASE "+res.result().get(0).getString("items"));
 						System.out.println("USER ITEMS FROM REQUEST "+userToItems.getString("items"));
+						
+						System.out.println("PARSE ITEMS " + userToItems.getString("items").toString());
+
+						//TODO FROM JSON
+Gson gson = new Gson(); 
+Item[] userArray = gson.fromJson(userToItems.getString("items").toString(), Item[].class);  
+for(Item item : userArray) {
+	System.out.println(item.getUsername()+"  "+ item.getEmail());
+}
+					//TODO TO JSON
+
+
+						//TODO DB - NULL, DB > 0
+						//TODO REQUEST NULL , REQUEST > 0
+						
 //						mongoClient.updateCollection("user",
 //								new JsonObject().put("email", userToItems.getString("email")),
 //								new JsonObject().put("$set", new JsonObject().put("token", "TEMPTOKEN")), resUpdate -> {
