@@ -6,9 +6,10 @@ public class Item {
 	String name;
 	String owner;
 	String UUID;
+	String _id;
 
 	public JsonObject toConduitString() {
-		JsonObject item = new JsonObject().put("name", this.name).put("owner", this.owner);//.put("UUID", this.UUID)
+		JsonObject item = new JsonObject().put("name", this.name).put("owner", this.owner);// .put("UUID", this.UUID)
 		JsonObject retVal = new JsonObject().put("item", item);
 
 		return retVal;
@@ -45,5 +46,9 @@ public class Item {
 
 	public String getUUID() {
 		return UUID;
+	}
+
+	public String _id() {
+		return _id;
 	}
 }

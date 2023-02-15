@@ -15,8 +15,7 @@ public class MainVerticle extends AbstractVerticle {
 //	vertx.deployVerticle(new HttpVerticle());
 //		List<Future> allFutures = ImmutableList.of(deployVerticle(HttpVerticle.class.getName()).future(),deployVerticle(PersistenceVerticle.class.getName()).future());
 		CompositeFuture.all(deployVerticle(HttpVerticle.class.getName()).future(),
-				deployVerticle(PersistenceVerticle.class.getName()).future()).onComplete(f -> { // setHandler ->
-																								// onComplete
+				deployVerticle(PersistenceVerticle.class.getName()).future()).onComplete(f -> {
 					if (f.succeeded()) {
 						startPromise.complete();
 					} else {
@@ -26,45 +25,14 @@ public class MainVerticle extends AbstractVerticle {
 	}
 
 	Promise<Void> deployVerticle(String verticleName) {
-		Promise<Void> retVal = Promise.promise(); // NULL ???????
+		Promise<Void> retVal = Promise.promise();
 		vertx.deployVerticle(verticleName, event -> {
 			if (event.succeeded()) {
-				retVal.complete(); // complete -> isComplete ???????
+				retVal.complete();
 			} else {
 				retVal.fail(event.cause());
 			}
 		});
 		return retVal;
 	}
-
-//	@Override
-//	public void start(Promise<Void> startPromise) {
-//    vertx.createHttpServer()
-//        .requestHandler(req -> req.response().end("Hello XXXXXX"))
-//        .listen(3000);
-//	  vertx.deployVerticle(new HttpVerticle());
-
-//		CompositeFuture
-//				.all(deployVerticle(HttpVerticle.class.getName()), deployVerticle(PersistenceVerticle.class.getName()))
-//				.onComplete(f -> { // ver4 onComplete
-//					if (f.succeeded()) {
-//						Future.succeededFuture(); // startFuture.complete() ??
-//					} else {
-//						Future.failedFuture(f.cause()); // startFuture.fail() ??
-//					}
-//				});
-//}
-//Future.succeededFuture();
-
-//	Future<Void> deployVerticle(String verticleName) {
-//		Future<Void> retVal = Future.future(null); // null ???
-//		vertx.deployVerticle(verticleName, event -> {
-//			if (event.succeeded()) {
-//				retVal.onComplete(null); // .complete() ??
-//			} else {
-//				retVal.onFailure(null); // fail(event.cause()) ??
-//			}
-//		});
-//		return retVal;
-//	}
 }

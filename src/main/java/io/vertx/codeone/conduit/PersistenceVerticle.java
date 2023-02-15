@@ -1,12 +1,14 @@
 package io.vertx.codeone.conduit;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import javax.lang.model.element.Element;
-import javax.swing.text.Document;
 
+import org.bson.Document;
 import org.bson.conversions.Bson;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -21,6 +23,7 @@ import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.auth.mongo.MongoAuthentication;
@@ -32,51 +35,27 @@ import io.vertx.ext.mongo.MongoClient;
 
 public class PersistenceVerticle extends AbstractVerticle {
 
-	// for DB access
 	private MongoClient mongoClient;
-	// Authentication provider for logging in
-	@SuppressWarnings("deprecation")
-	private MongoAuth loginAuthProvider;
-	private MongoAuthentication userAuthentication;
-	private MongoAuthorization userAuthorization;
-//private MongoAuthenticationOptions userAuthenticationOptions;  
-	//
 	MongoUserUtil inserterToDb;
-	MongoUserUtil loginerToDb;
 
-	// @SuppressWarnings("deprecation")
-	// @Override
 	public void start(Promise<Void> startPromise) {
-//		ChangebleAdr changer = new ChangebleAdr() {
-//			public String setAdress(String adr) {
-//				return adr;
-//			}
-//		};
-		// Configure the MongoClient inline. This should be externalized into a config
-		// file
 		mongoClient = MongoClient.createShared(vertx,
 				new JsonObject().put("db_name", config().getString("db_name", "conduit_dev")).put("connection_string",
 						config().getString("connection_string", "mongodb://localhost:27017")));
+		mongoClient.createCollection("user");
+		mongoClient.createCollection("items");
 		inserterToDb = MongoUserUtil.create(mongoClient);
-		loginerToDb = MongoUserUtil.create(mongoClient);
-		// Configure authentication with MongoDB
-		// loginAuthProvider = MongoAuth.create(mongoClient, new JsonObject());
 		MongoAuthenticationOptions userAuthenticationOptions = new MongoAuthenticationOptions();
 		userAuthenticationOptions.setUsernameField("email");
-		userAuthenticationOptions.setUsernameCredentialField("email"); // PROBLEM !!!!!
+		userAuthenticationOptions.setUsernameCredentialField("email");
 		MongoAuthentication.create(mongoClient, userAuthenticationOptions);
-
-		// userAuthorization.create( mongoClient, userAuthenticationOptions);
-		// loginAuthProvider.setUsernameField("email");
-		// loginAuthProvider.setUsernameCredentialField("email");
-
 		EventBus eventBus = vertx.eventBus();
 //		eventBus.addInboundInterceptor(busMsg -> {
 //			JsonObject messageJson = new JsonObject(busMsg.message().body().toString());
 //			actionOnAdress = messageJson.getString("action");
 //				busMsg.next();
 //		});
-		// TODO KISS ?
+// TODO KISS ?
 		MessageConsumer<JsonObject> consumerPer = eventBus.consumer("persistence-address");// messageJson.getString("action"));
 		consumerPer.handler(perMessage -> {
 			String action = perMessage.body().getString("action");
@@ -106,6 +85,9 @@ public class PersistenceVerticle extends AbstractVerticle {
 			case "items-user":
 				itemsUser(itemMessage);
 				break;
+			case "get-items-user":
+				getItemsUser(itemMessage);
+				break;
 			default:
 				itemMessage.fail(1, "Unkown action: " + itemMessage.body());
 			}
@@ -115,34 +97,19 @@ public class PersistenceVerticle extends AbstractVerticle {
 	}
 
 	private void registerUser(Message<JsonObject> message) {
-//message.fail(1, "Unimplemented");
-
-//	  JsonObject retVal = new JsonObject()
-//			  	.put("email", "mirek@mirek")
-//			  	.put("username", "mirek");
-//	  message.reply(retVal);
-// TODO create account -> insert to DB
-		// TODO if exists -> msg exists
 		JsonObject userToRegister = message.body().getJsonObject("user");
 		System.out.println("8 " + userToRegister);
-
 		inserterToDb.createUser(userToRegister.getString("email"), userToRegister.getString("password"), ar -> {
 			if (ar.succeeded()) {
 				String id = ar.result();
-
 				System.out.println("ID " + id);
 				UUID testUUID = UUID.nameUUIDFromBytes(id.getBytes());
 				System.out.println("UUID " + testUUID);
-
-				// JsonObject query = new JsonObject().put("_id",
-				// id);//.put("_UUID","generatedUUID");
 				JsonObject query = new JsonObject().put("_id", id);
 				JsonObject userData = new JsonObject();
 				userData.put("username", userToRegister.getString("username"));
 				userData.put("email", userToRegister.getString("email"));
 				userData.put("UUID", testUUID.toString());
-				// userData.put("token", userToRegister.getString("token")); //TODO issue with
-				// unic crypted token -> lets make temp :F
 				userData.put("token", null);
 				userData.put("items", null);
 				JsonObject update = new JsonObject().put("$set", userData);
@@ -169,42 +136,20 @@ public class PersistenceVerticle extends AbstractVerticle {
 		// 1) Check if user in DB
 		// 2) set token, msg (success login) <- null <- | token | -> not null -> msg
 		// "already logged"
-		System.out.println("FFFFFFFFFFFFFFFFFFFf  "+message.body());
-		System.out.println("loginUser METHOD !!!!!!!!!!!!!!!!! START");
 		JsonObject userToLogin = message.body().getJsonObject("user");
 		MongoAuthorizationOptions userAuthorizationOptions = new MongoAuthorizationOptions();
 		userAuthorizationOptions.setUsernameField("email");
 		userAuthorizationOptions.setPermissionField("password");
 		String providerIDtest = "loginProvider";
 		MongoAuthorization.create(providerIDtest, mongoClient, userAuthorizationOptions);
-
-//	 	loginerToDb.createUser(userToLogin.getString("email"), userToLogin.getString("password"), ar -> {
-//	 		if (ar.succeeded()) {
-//	 			System.out.println(ar.result());
-		// JsonObject query = new JsonObject().put("_id", id);
-		// JsonObject userData = new JsonObject();
-		// userData.put("username", userToLogin.getString("username"));
-		// userData.put("token", "tempTokenForUser");
-		// JsonObject update = new JsonObject().put("$set", userData);
-
-		// TODO exception IndexOutOfBoundsException
 		try {
 			mongoClient.find("user", new JsonObject().put("email", userToLogin.getString("email")), res -> {
-
 				if (res.result().toString().length() < 3) {
-					System.out.println("DEBUG 22" + res.result().toString().equals("[]"));
 					message.fail(2, "User not found: " + null);
 				} else {
-					System.out.println("DEBUG 33" + res);
-					System.out.println("DEBUG 33" + res.result());
 					message.reply(userToLogin);
-					System.out.println("DEBUG 4 " + res.result().get(0).getString("username"));
-
-					System.out.println("DEBUG 5 " + res.result().get(0).getString("token"));
 					if (res.result().get(0).getString("token") == null) { // TODO jwt.token.temp ->
-																			// null
 						System.out.println("USER IN DB, logging, will set temp token ");
-
 						mongoClient.updateCollection("user",
 								new JsonObject().put("email", userToLogin.getString("email")),
 								new JsonObject().put("$set", new JsonObject().put("token", "TEMPTOKEN")), resUpdate -> {
@@ -224,95 +169,120 @@ public class PersistenceVerticle extends AbstractVerticle {
 	}
 
 	private void itemsUser(Message<JsonObject> message) {
-		System.out.println("PERSISTENCE itemsUser method !!!!!!!!!!!!!!!!!!" + message.body());
 		JsonObject userToItems = message.body().getJsonObject("user");
-		System.out.println("PERSISTENCE itemsUser method !!!!!!!!!!!!!!!!!! "+userToItems.getString("email"));
-//		try {
+		try {
 			mongoClient.find("user", new JsonObject().put("email", userToItems.getString("email")), res -> {
 				if (res.result().toString().length() < 3) {
 					message.fail(2, "User not found: " + null);
 				} else {
-					System.out.println("DEBUG 33" + res);
-					System.out.println("DEBUG 33" + res.result());
 					message.reply(userToItems);
-					System.out.println("DEBUG 4 " + res.result().get(0).getString("username"));
-
-					System.out.println("DEBUG 5 " + res.result().get(0).getString("token"));
 					if (res.result().get(0).getString("token").equals("TEMPTOKEN")) { // TODO jwt.token.temp ->
-																			// null
-						System.out.println("USER IN DB, AUTHORIZED SO OK");
-						System.out.println("USER ITEMS FROM DATABASE "+res.result().get(0).getString("items"));
-						System.out.println("USER ITEMS FROM REQUEST "+userToItems.getString("items"));
-						
-						System.out.println("PARSE ITEMS " + userToItems.getString("items").toString());
+						if (userToItems.getString("items") == null) {
+							System.out.println("REQUEST NULL ITEMS");
+							message.reply("Empty items in request");
+						} else {
+							JsonArray array = new JsonArray();
+							if (res.result().get(0).getString("items") != null) { // itmes DB + items request
+								System.out.println("DB NULL ITEMS");
+								itemsToJson(parseItemsString(res.result().get(0).getString("items").toString()), array);
+							}
+							createItems(res.result().get(0).getString("UUID"),
+									parseItemsString(userToItems.getString("items").toString())); // Only items from
+																									// request
+							itemsToJson(parseItemsString(userToItems.getString("items").toString()), array);
 
-						//TODO FROM JSON
-Gson gson = new Gson(); 
-Item[] userArray = gson.fromJson(userToItems.getString("items").toString(), Item[].class);  
-for(Item item : userArray) {
-	System.out.println(item.getUsername()+"  "+ item.getEmail());
-}
-					//TODO TO JSON
-
-
-						//TODO DB - NULL, DB > 0
-						//TODO REQUEST NULL , REQUEST > 0
-						
-//						mongoClient.updateCollection("user",
-//								new JsonObject().put("email", userToItems.getString("email")),
-//								new JsonObject().put("$set", new JsonObject().put("token", "TEMPTOKEN")), resUpdate -> {
-//									if (resUpdate.succeeded()) {
-//										System.out.println("SUCCES UPDATE" + userToItems);
-//										message.reply(resUpdate);
-//									} else {
-//										message.fail(2, "insert failed: " + resUpdate.cause().getMessage());
-//									}
-//								});
+							mongoClient.updateCollection("user",
+									new JsonObject().put("email", userToItems.getString("email")),
+									new JsonObject().put("$set", new JsonObject().put("items", array)), resUpdate -> {
+										if (resUpdate.succeeded()) {
+											System.out.println("SUCCES UPDATE" + userToItems);
+											message.reply("SUCCES UPDATE" + userToItems);
+										} else {
+											message.fail(2, "insert failed: " + resUpdate.cause().getMessage());
+										}
+									});
+						}
 					}
 				}
 			});
-//		} catch (Exception e) {
-//			System.out.println("User username NOT FOUND " + e);
-//		}
+		} catch (Exception e) {
+			System.out.println("User username NOT FOUND " + e);
+		}
 	}
 
-//	private void postItemsCreate(Message<JsonObject> message) {
-//		// TODO check if token equals TEMPTOKEN
-//		// TODO Items from db -> add new -> Write in DB
-//		JsonObject userToItemsCreate = message.body().getJsonObject("user");
-//		JsonObject ItemsNames = message.body().getJsonObject("items"); // null -> leave or empty list
-//		try {
-//			mongoClient.find("user", new JsonObject().put("email", userToItemsCreate.getString("email")), res -> {
-//				if (res.result().toString().length() < 3) {
-//					message.fail(2, "User not found: " + null);
-//				} else {
-//					message.reply("User found: " + userToItemsCreate);
-//					if (res.result().get(0).getString("token").equals("TEMPTOKEN")) { // TODO TEMPTOKEK -> OK
-//						message.reply("User Authorized: " + userToItemsCreate);
-//						System.out.println(res.result().get(0).getString("items"));
-////						mongoClient.updateCollection("user",
-////								new JsonObject().put("email", userToItemsCreate.getString("email")),
-////								new JsonObject().put("$set", new JsonObject().put("token", "TEMPTOKEN")), resUpdate -> {
-////									if (resUpdate.succeeded()) {
-////										System.out.println("SUCCES UPDATE" + userToLogin);
-////										message.reply(resUpdate);
-////									} else {
-////										message.fail(2, "insert failed: " + resUpdate.cause().getMessage());
-////									}
-////								});
-//					}
-//				}
-//			});
-//		} catch (Exception e) {
-//			System.out.println("User username NOT FOUND " + e);
-//		}
-//		// TODO create item for authorized user (token equals TEMPTOKEN)
-//		// TODO Item_name -> create item -> write in DB
-//	}
-//
-//	private void getItemsGet(Message<JsonObject> message) {
-//		// TODO check if token equals TEMPTOKEN
-//		// TODO show list of user item's
-//
-//	}
+	private List<String> parseItemsString(String items) {
+		String buffString = items.replaceAll("[^a-zA-Z0-9,_-]", "");
+		List<String> list = new ArrayList<String>();
+		for (String item : buffString.split(",")) {
+			list.add(item);
+		}
+		return list;
+
+	}
+
+	private JsonArray itemsToJson(List<String> list, JsonArray array) {
+		for (int i = 0; i < list.size(); i++) {
+			array.add(list.get(i));
+		}
+		return array;
+	}
+
+	private void createItems(String userUUID, List<String> items) {
+		for (String itemName : items) {
+			JsonObject item = new JsonObject().put("owner", userUUID).put("name", itemName).put("UUID", null);
+			mongoClient.insert("items", item, res -> {
+				// TODO: ISSUE WITH UUID
+				String id = res.result();
+				UUID testUUID = UUID.nameUUIDFromBytes(id.getBytes());
+				JsonObject query = new JsonObject().put("_id", id);
+				JsonObject itemData = new JsonObject();
+				itemData.put("UUID", testUUID.toString());
+				JsonObject update = new JsonObject().put("$set", itemData);
+				mongoClient.updateCollection("items", query, update, resUpdate -> {
+					if (resUpdate.succeeded()) {
+						System.out.println("TempUUID added success");
+					} else {
+						System.out.println("TempUUID NOT added, fail" + resUpdate);
+					}
+					System.out.println("INSERT ITEMS next OK ");
+				});
+			});
+		}
+	}
+
+	private void getItemsUser(Message<JsonObject> message) {
+		JsonObject userToItems = message.body().getJsonObject("user");
+		System.out.println("DEBUG ### USER userToItems " + message.body().getJsonObject("user"));
+		try {
+			mongoClient.find("user", new JsonObject().put("email", userToItems.getString("email")), res -> {
+				if (res.result().toString().length() < 3) {
+					message.fail(2, "User not found: " + null);
+				} else {
+					message.reply(userToItems);
+					if (res.result().get(0).getString("token").equals("TEMPTOKEN")) { // TODO jwt.token.temp ->
+						System.out.println("DEBUG ### USER UUID " + res.result().get(0).getString("UUID"));
+						mongoClient.find("items", new JsonObject().put("owner", res.result().get(0).getString("UUID")),
+								resFoundItems -> {
+									if (res.result().toString().length() < 3) {
+										message.reply("User have no items");
+									} else {
+										Gson gson = new Gson();
+										Item[] userArray = gson.fromJson(resFoundItems.result().toString(),
+												Item[].class);
+										for (Item item : userArray) {
+											System.out.println("ITEM ID:  " + item._id() + " NAME: "
+													+ item.getUsername() + " OWNER: " + item.getEmail());
+										}
+										// message.reply(userArray);
+									}
+								});
+					} else {
+						System.out.println("USER NOT AUTHORIZED");
+					}
+				}
+			});
+		} catch (Exception e) {
+			System.out.println("User username NOT FOUND " + e);
+		}
+	}
 }

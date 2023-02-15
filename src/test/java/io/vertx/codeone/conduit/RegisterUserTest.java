@@ -54,11 +54,11 @@ public class RegisterUserTest {
 					if (ar.succeeded()) {
 						System.out.println("RegisterUserTest OK !!!");
 						testContext.assertEquals(201, ar.result().statusCode());
-						JsonObject returnedJson = ar.result().bodyAsJsonObject(); // ???????????????//
-						JsonObject returnedUser = returnedJson.getJsonObject("user"); // ???????????
+						JsonObject returnedJson = ar.result().bodyAsJsonObject();
+						JsonObject returnedUser = returnedJson.getJsonObject("user");
 						testContext.assertEquals("mirek", returnedUser.getString("username"));
 						testContext.assertEquals("sw3d96@gmail.com", returnedUser.getString("email"));
-						// testContext.assertTrue(returnedUser.getString("token").length() > 25);
+						// testContext.assertTrue(returnedUser.getString("token").length() > 3);
 						testContext.assertNotNull(returnedUser.getString("token"));
 						async.complete();
 					}
